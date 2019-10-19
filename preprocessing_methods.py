@@ -2,7 +2,10 @@
 # imports
 import numpy as np
 import os
-
+import sys
+drive.mount('/content/drive')
+sys.path.append('./drive/My Drive/')
+sys.path.append('./drive/My Drive/mais_project/')
 
 # helper methods for the pre-processing
 
@@ -77,6 +80,83 @@ def save_to_2d_arrays(data_mass , data_ion , dir_path="./matching_pictures/" , f
             np.save(dir_path+fname , matching_slices)
         count +=1
         print(count , end=" ")# trace
+
+
+# Method that takes a redshift value as input, finds the block with this 
+# redshift value in ESC FRAC 0.070, cuts it up into slices and saves these 
+# in it's own folder in ES_FRAC_delta_T_slices
+# The variable redshift is a string that looks something like "z0.01300"
+def save_images_ESC_FRAC_0070(redshift, over_write=False):
+  # get a list of the names of the files in "joelle_ESC_FRAC_0.070_RNG_150/"
+  mypath = "./drive/My Drive/21cmFAST_bank/joelle_batch_2.1/joelle_ESC_FRAC_0.070_RNG_150/"
+  save_path = './drive/My Drive/mais_project/ESC_FRAC_delta_T_slices/'
+  fnames = pm.filenames_in(mypath = mypath)
+  delta_T_fnames = []
+  
+  for f in fnames:
+    if "delta_T" in f: delta_T_fnames.append(f)
+  # find the individual filename
+  fname = []
+  for f in delta_T_fnames: 
+    if redshift in f: fname.append(f)
+  if len(fname) != 1: raise Exception("the redshift value is not unique!")
+  fname = fname[0]
+  
+  # get the data from the file
+  data_delta_T = pm.binary_to_3dbox(mypath + fname)
+  
+  # make a directory where you will save the data for the box if there isn't one there already
+    
+  dir_name = "ESC_FRAC_delta_T_redshift_"+str(redshift)
+  if not os.path.exists(save_path + dir_name):
+    os.makedirs(save_path + dir_name)
+  
+  else:
+    if over_write==False:
+      print("There is already a directory here, the files will not be over-written")
+      print("Set 'over-write' to True if you wish to over-write the files in this directory")
+      return
+  
+  # cut up the 200^3 box into 64 50^3 boxes
+  small_boxes = []
+  for i in range(64):
+    small_boxes.append(data_delta_T[50* (i%4):50* (i%4+1),
+                               50* int(i/4. %4):50* (int(i/4. %4)+1),
+                               50* int(i/16. %4):50* (int(i/16.%4)+1)])
+    
+  # check that the boxes are all the same shape
+  the_shape = small_boxes[0].shape
+  for i in small_boxes: 
+    if i.shape != the_shape: 
+      raise Exception('the small boxes are not the same shape! '+str(the_shape)+' vs '+str(i.shape))
+  print("shape of boxes:",the_shape)# trace
+  
+  # cut up the small boxes into 2d arrays and save them as numpy arrays
+  print("Saving the boxes")
+  for i in range(len(small_boxes)):
+    box = small_boxes[i]
+    for j in range(len(box)):
+      fname = "ESC_FRAC_0.070_RNG_150_"+str(i).zfill(2)+"_"+str(j).zfill(3)+".npy"# 3 and not 2 just in case i want to re-cycle for bigger arrays
+      one_slice = box[j]
+      np.save(save_path+dir_name+"/"+fname , one_slice)
+      
+  print("all slices from redshift\n"+dir_name+"/ are saved")  
+   
+
+
+def save_all_ESC_FRAC_0070():
+    # make list of redshifts to save
+    redshifts_to_save = []
+    redshift = 5.0
+    while redshift <= 13:
+        redshifts_to_save.append("z"+str(int(redshift)).zfill(3)+"."+str(redshift)[-1:]+"0")
+        redshift += 0.5
+    print(redshifts_to_save)
+
+    # save the redshifts
+    for redshift in redshifts_to_save:
+        print(redshift, end="...\n")
+        save_images_ESC_FRAC_0070(redshift , over_write=False)
 
 
 
