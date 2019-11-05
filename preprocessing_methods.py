@@ -161,3 +161,14 @@ def save_all_ESC_FRAC_0070():
 
 
 
+
+def print_files_0070():
+    files = [f for f in os.listdir("./drive/My Drive/21cmFAST_bank/joelle_batch_2.1/joelle_ESC_FRAC_0.070_RNG_150/")]
+    files.sort()
+    for f in files:
+	print(f)
+
+
+
+
+
